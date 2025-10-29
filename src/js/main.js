@@ -614,6 +614,10 @@ function playTargetNote(noteOrObj, durSec = 0.6) {
 
 function playSequence(sample) {
     const audioCtx = getAudioContext();
+    // Ensure audio context is running on user gesture
+    if (audioCtx.state === "suspended") {
+        try { audioCtx.resume(); } catch (_) {}
+    }
     stopPlay(); // Stop any previous playback
     stopRequested = false;
     const bpm = Math.max(40, Math.min(220, Number(tempoInput.value) || 90));
@@ -638,6 +642,7 @@ function playSequence(sample) {
 
 function scheduleNote(noteName, startTime, durSec, noteObj, idx, notes) {
     const audioCtx = getAudioContext();
+    const a = startTime; // unify start time for both sample and synth paths
 
     // play sound: check if sample or synth
     if (
@@ -659,7 +664,6 @@ function scheduleNote(noteName, startTime, durSec, noteObj, idx, notes) {
         gainNode.connect(getMasterOutput());
 
         // ramp
-        const a = startTime;
         gainNode.gain.setValueAtTime(0, a);
         // Use a slightly lower max gain for scheduled notes to avoid clipping with multiple notes
         gainNode.gain.linearRampToValueAtTime(0.12, a + 0.01);
@@ -838,7 +842,7 @@ async function loadInstrumentSamples(instrumentName) {
 
         // Reverted to simple naming: C4.wav, C#4.wav, etc.
         const sampleFilename = `${normNote.replace(/#/g, "%23")}.wav`;
-        const sampleUrl = `../../public/audio/piano/Grandma_Beachhouse_Piano/${sampleFilename}`;
+    const sampleUrl = `../public/audio/piano/Grandma_Beachhouse_Piano/${sampleFilename}`;
 
         return fetch(sampleUrl)
             .then((response) => {
