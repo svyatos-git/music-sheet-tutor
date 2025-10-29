@@ -1,0 +1,22 @@
+{
+  "name": "music-sheet-tutor",
+  "version": "1.0.0",
+  "description": "An application to help users learn how to read music sheets.",
+  "main": "src/js/main.js",
+  "scripts": {
+    "start": "live-server src",
+    "build": "echo 'Build step not defined'",
+    "test": "echo 'Test step not defined'"
+  },
+  "keywords": [
+    "music",
+    "education",
+    "sheet music",
+    "learning"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "live-server": "^1.2.1"
+  }
+}

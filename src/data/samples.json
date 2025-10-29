@@ -1,0 +1,47 @@
+{
+  "samples": [
+    {
+      "id": 1,
+      "title": "Twinkle Twinkle Little Star",
+      "notes": [
+        {"note": "C4", "duration": "quarter"},
+        {"note": "C4", "duration": "quarter"},
+        {"note": "G4", "duration": "quarter"},
+        {"note": "G4", "duration": "quarter"},
+        {"note": "A4", "duration": "quarter"},
+        {"note": "A4", "duration": "quarter"},
+        {"note": "G4", "duration": "half"}
+      ],
+      "exercise": "Play the melody using a keyboard or piano."
+    },
+    {
+      "id": 2,
+      "title": "Mary Had a Little Lamb",
+      "notes": [
+        {"note": "E4", "duration": "quarter"},
+        {"note": "D4", "duration": "quarter"},
+        {"note": "C4", "duration": "quarter"},
+        {"note": "D4", "duration": "quarter"},
+        {"note": "E4", "duration": "quarter"},
+        {"note": "E4", "duration": "quarter"},
+        {"note": "E4", "duration": "half"}
+      ],
+      "exercise": "Practice playing this song with a metronome."
+    },
+    {
+      "id": 3,
+      "title": "Ode to Joy",
+      "notes": [
+        {"note": "E4", "duration": "quarter"},
+        {"note": "E4", "duration": "quarter"},
+        {"note": "F4", "duration": "quarter"},
+        {"note": "G4", "duration": "quarter"},
+        {"note": "G4", "duration": "quarter"},
+        {"note": "F4", "duration": "quarter"},
+        {"note": "E4", "duration": "quarter"},
+        {"note": "D4", "duration": "half"}
+      ],
+      "exercise": "Try to sing along while playing the notes."
+    }
+  ]
+}
