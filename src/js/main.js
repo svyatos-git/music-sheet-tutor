@@ -800,7 +800,7 @@ async function loadInstrumentSamples(instrumentName) {
 
         // Reverted to simple naming: C4.wav, C#4.wav, etc.
         const sampleFilename = `${normNote.replace(/#/g, "%23")}.wav`;
-        const sampleUrl = `../../public/audio/piano/Yamaha_G3/${sampleFilename}`;
+        const sampleUrl = `../../public/audio/piano/Grandma_Beachhouse_Piano/${sampleFilename}`;
 
         return fetch(sampleUrl)
             .then((response) => {
