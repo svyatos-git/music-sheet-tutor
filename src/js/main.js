@@ -41,6 +41,41 @@ const pauseInput = document.getElementById("pauseSec");
 const instrumentSelect = document.getElementById("instrumentSelect");
 // new: MIDI status display
 const midiStatusEl = document.getElementById("midiStatus");
+// new: settings controls
+const volumeSlider = document.getElementById("volumeSlider");
+const midiCapInput = document.getElementById("midiCap");
+const midiCurveInput = document.getElementById("midiCurve");
+const midiAttackMsInput = document.getElementById("midiAttackMs");
+const midiReleaseMsInput = document.getElementById("midiReleaseMs");
+const resetAudioSettingsBtn = document.getElementById("resetAudioSettings");
+
+// defaults and storage
+const defaultAudioSettings = {
+    volume: 0.8,
+    midiGainCap: 0.5,
+    midiCurve: 1.5,
+    midiAttackSec: 0.005,
+    midiReleaseSec: 0.05,
+};
+
+function loadAudioSettings() {
+    try {
+        const raw = localStorage.getItem("audioSettings");
+        if (!raw) return { ...defaultAudioSettings };
+        const parsed = JSON.parse(raw);
+        return { ...defaultAudioSettings, ...parsed };
+    } catch (_) {
+        return { ...defaultAudioSettings };
+    }
+}
+
+function saveAudioSettings(settings) {
+    try {
+        localStorage.setItem("audioSettings", JSON.stringify(settings));
+    } catch (_) {}
+}
+
+let audioSettings = loadAudioSettings();
 
 // --- begin: keyboard + test mode additions ---
 const keyboardEl = document.getElementById("keyboard");
@@ -216,13 +251,13 @@ function handleKeyClick(noteName, keyEl, velocity = 100) {
     const audioCtx = getAudioContext();
     const now = audioCtx.currentTime;
     
-    // Scale MIDI velocity (0-127) to gain (0-1) with a gentler curve to prevent distortion
-    // For MIDI notes (velocity !== 100), use a softer curve and cap to prevent clipping
+    // Scale MIDI velocity with adjustable curve and cap
     let gainValue;
     if (velocity !== 100) {
-        // MIDI note: use a gentler exponential curve and cap at 0.5 to prevent clipping when multiple notes overlap
         const normalized = velocity / 127;
-        gainValue = Math.pow(normalized, 1.5) * 0.5; // Softer curve, max 0.5 per note
+        const curve = audioSettings.midiCurve;
+        const cap = audioSettings.midiGainCap;
+        gainValue = Math.min(cap, Math.pow(normalized, curve) * cap);
     } else {
         // Mouse/keyboard click: use full gain for compatibility
         gainValue = 1.0;
@@ -231,10 +266,13 @@ function handleKeyClick(noteName, keyEl, velocity = 100) {
     // Create a gain node for this specific note to control its volume and stop it later
     const noteGain = audioCtx.createGain();
     noteGain.connect(getMasterOutput());
-    // Add a small attack ramp to prevent clicks on MIDI notes
+    // Attack ramp to prevent clicks on MIDI notes
     if (velocity !== 100) {
         noteGain.gain.setValueAtTime(0, now);
-        noteGain.gain.linearRampToValueAtTime(gainValue, now + 0.005); // 5ms attack
+        noteGain.gain.linearRampToValueAtTime(
+            gainValue,
+            now + Math.max(0.001, audioSettings.midiAttackSec)
+        );
     } else {
         noteGain.gain.setValueAtTime(gainValue, now);
     }
@@ -742,7 +780,7 @@ function getAudioContext() {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         // Initialize master gain node for volume control
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.8; // Default to 80%
+        masterGain.gain.value = audioSettings.volume; // from settings
         masterGain.connect(audioCtx.destination);
     }
     return audioCtx;
@@ -758,7 +796,7 @@ function getMasterOutput() {
     if (!masterGain || masterGain.context !== ctx) {
         // Recreate if missing or context was recreated
         masterGain = ctx.createGain();
-        masterGain.gain.value = 0.8;
+        masterGain.gain.value = audioSettings.volume;
         masterGain.connect(ctx.destination);
     }
     return masterGain;
@@ -832,23 +870,75 @@ if (instrumentSelect) {
     );
 }
 
-// --- new: volume control handler ---
-const volumeSlider = document.getElementById("volumeSlider");
-if (volumeSlider) {
-    volumeSlider.addEventListener("input", (e) => {
-        const volume = parseInt(e.target.value, 10) / 100; // Convert 0-100 to 0-1
-        const master = getMasterOutput();
-        if (master) {
-            const now = master.context.currentTime;
-            master.gain.setTargetAtTime(volume, now, 0.01); // Smooth transition
-        }
-    });
-    // Set initial volume
-    const initialVolume = parseInt(volumeSlider.value, 10) / 100;
+// --- new: settings wiring ---
+function applySettingsToUI() {
+    if (volumeSlider) volumeSlider.value = Math.round((audioSettings.volume || 0) * 100);
+    if (midiCapInput) midiCapInput.value = String(audioSettings.midiGainCap);
+    if (midiCurveInput) midiCurveInput.value = String(audioSettings.midiCurve);
+    if (midiAttackMsInput)
+        midiAttackMsInput.value = String(Math.round((audioSettings.midiAttackSec || 0) * 1000));
+    if (midiReleaseMsInput)
+        midiReleaseMsInput.value = String(Math.round((audioSettings.midiReleaseSec || 0) * 1000));
+}
+
+function applySettingsToAudio() {
     const master = getMasterOutput();
     if (master) {
-        master.gain.value = initialVolume;
+        const now = master.context.currentTime;
+        master.gain.setTargetAtTime(audioSettings.volume, now, 0.01);
     }
+}
+
+applySettingsToUI();
+applySettingsToAudio();
+
+if (volumeSlider) {
+    volumeSlider.addEventListener("input", (e) => {
+        const volume = Math.max(0, Math.min(1, parseInt(e.target.value, 10) / 100));
+        audioSettings.volume = volume;
+        saveAudioSettings(audioSettings);
+        applySettingsToAudio();
+    });
+}
+
+if (midiCapInput) {
+    midiCapInput.addEventListener("input", (e) => {
+        const v = Number(e.target.value);
+        audioSettings.midiGainCap = isNaN(v) ? defaultAudioSettings.midiGainCap : Math.max(0, Math.min(1, v));
+        saveAudioSettings(audioSettings);
+    });
+}
+if (midiCurveInput) {
+    midiCurveInput.addEventListener("input", (e) => {
+        const v = Number(e.target.value);
+        audioSettings.midiCurve = isNaN(v) ? defaultAudioSettings.midiCurve : Math.max(1, Math.min(3, v));
+        saveAudioSettings(audioSettings);
+    });
+}
+if (midiAttackMsInput) {
+    midiAttackMsInput.addEventListener("input", (e) => {
+        const v = Number(e.target.value);
+        const clamped = isNaN(v) ? (defaultAudioSettings.midiAttackSec * 1000) : Math.max(0, Math.min(50, v));
+        audioSettings.midiAttackSec = clamped / 1000;
+        saveAudioSettings(audioSettings);
+    });
+}
+if (midiReleaseMsInput) {
+    midiReleaseMsInput.addEventListener("input", (e) => {
+        const v = Number(e.target.value);
+        const clamped = isNaN(v) ? (defaultAudioSettings.midiReleaseSec * 1000) : Math.max(0, Math.min(200, v));
+        audioSettings.midiReleaseSec = clamped / 1000;
+        saveAudioSettings(audioSettings);
+    });
+}
+
+if (resetAudioSettingsBtn) {
+    resetAudioSettingsBtn.addEventListener("click", () => {
+        audioSettings = { ...defaultAudioSettings };
+        saveAudioSettings(audioSettings);
+        applySettingsToUI();
+        applySettingsToAudio();
+    });
 }
 
 // --- new: computer keyboard input ---
@@ -932,8 +1022,9 @@ function handleMidiMessage(message) {
                 const now = audioCtx.currentTime;
                 // Ramp down gain to avoid clicks, then stop
                 noteGain.gain.cancelScheduledValues(now);
-                noteGain.gain.linearRampToValueAtTime(0, now + 0.05); // Quick fade out
-                source.stop(now + 0.05); // Stop after fade
+                const rel = Math.max(0.005, audioSettings.midiReleaseSec);
+                noteGain.gain.linearRampToValueAtTime(0, now + rel);
+                source.stop(now + rel);
                 // Disconnect to free up resources
                 source.disconnect();
                 noteGain.disconnect();

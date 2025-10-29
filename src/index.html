@@ -44,6 +44,24 @@
 
         <button id="playBtn">Play</button>
         <button id="stopBtn">Stop</button>
+
+        <!-- NEW: audio settings (MIDI) -->
+        <div id="audioSettings" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:12px; align-items:center">
+          <strong style="margin-right:6px;">Settings:</strong>
+          <label for="midiCap" title="Max per-note gain for MIDI (0-1)">MIDI cap</label>
+          <input id="midiCap" type="number" min="0" max="1" step="0.05" value="0.5" style="width:72px" />
+
+          <label for="midiCurve" title="Curve for MIDI velocity response (1-3)">Curve</label>
+          <input id="midiCurve" type="number" min="1" max="3" step="0.1" value="1.5" style="width:72px" />
+
+          <label for="midiAttackMs" title="Attack time to avoid clicks (ms)">Attack (ms)</label>
+          <input id="midiAttackMs" type="number" min="0" max="50" step="1" value="5" style="width:72px" />
+
+          <label for="midiReleaseMs" title="Release time on note-off (ms)">Release (ms)</label>
+          <input id="midiReleaseMs" type="number" min="0" max="200" step="5" value="50" style="width:72px" />
+
+          <button id="resetAudioSettings" type="button">Reset defaults</button>
+        </div>
       </section>
 
       <section id="notation-area">
